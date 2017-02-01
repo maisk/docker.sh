@@ -8,12 +8,6 @@ if [ "x$1" == "xversion" ]; then
 	exit;
 fi
 
-PARSE_NAMES_FLAG=0
-if [[ "x$1" == xecho* ]] || [[ "x$1" ==  "xinfo" ]] || [[ "x$1" == xexport* ]] ; then
-	PARSE_NAMES_FLAG=1
-fi
-
-
 
 function print_config_help {
 	echo "CONFIG VARIABLES:"
@@ -187,13 +181,8 @@ CONF_VAR_NAMES=(
 );
 
 
-#VARS=`compgen -A variable|sort`;
-if [ "$PARSE_NAMES_FLAG" -eq 1 ];then
-	__VARS_FILE1=$(tempfile)
-	compgen -A variable|sort > $__VARS_FILE1
-fi
+__VAR_NAMES_INIT=`compgen -A variable|sort`;
 #VARS="`set -o posix ; set`";
-###VARS=`set -o posix;set|awk -F= '{print $1}'|sort`;
 
 __MY_DIR=`readlink -f  .`;
 __DEFAULT_DIR=1;
@@ -314,9 +303,16 @@ if [[ "$__DEFAULT_CONF" == "1" ]]; then
 		fi
 fi
 
-#echo "2 RUN_ENV: ${RUN_ENV[*]}";
-#echo "2 DRY RUN: $DRY_RUN";
 
+if [ "x$1" == "xversion" ]; then
+	echo $DOCKER_SH_VERSION;
+	exit;
+fi
+
+PARSE_NAMES_FLAG=0
+if [[ "x$1" == xecho* ]] || [[ "x$1" ==  "xinfo" ]] || [[ "x$1" == xexport* ]] ; then
+	PARSE_NAMES_FLAG=1
+fi
 
 if [[ "x${IMAGE_NAME}" == "x" ]]; then
 	if [[ "x${IMAGE_REPOSITORY}" != "x" ]]; then
@@ -328,18 +324,16 @@ if [[ "x${IMAGE_NAME}" == "x" ]]; then
 fi;
 
 
+
 if [ "$PARSE_NAMES_FLAG" -eq 1 ];then
 
+	__VARS_FILE1=$(tempfile)
+	echo "$__VAR_NAMES_INIT" > $__VARS_FILE1
 	__VARS_FILE2=$(tempfile)
 	compgen -A variable|sort > $__VARS_FILE2
 
-
-	#EXCLUDE_P="^C|^OPTIND$|^CIDFILE$|^DRY_RUN$|^VARS$|^__"
-	#EXCLUDE_P="^C$|^VARS$|^opt$|^CIDFILE$|^DRY_RUN$"
 	EXCLUDE_P="^C$|^__|^opt$|^CIDFILE$|^DRY_RUN$";
 	#SCRIPT_CONF_VARS="`grep -vFe "$VARS" <<<"$(set -o posix ; set)"|awk -F= '{print $1}'|grep -Ev "$EXCLUDE_P"`"; unset VARS;
-	#SCRIPT_CONF_VARS="`grep -vFe "$VARS" <<< "$(compgen -A variable|sort)"|grep -Ev "$EXCLUDE_P"`"; unset VARS;
-	#SCRIPT_CONF_VARS="`grep -vFe "$VARS" <<< "$(compgen -A variable|sort)"`";
 	SCRIPT_CONF_VARS="`diff ${__VARS_FILE1} ${__VARS_FILE2}|grep '^>'|sed 's/> //'|grep -Ev "$EXCLUDE_P"`";
 	rm -f ${__VARS_FILE1};
 	rm -f ${__VARS_FILE2};
